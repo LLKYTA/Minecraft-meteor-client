@@ -99,6 +99,7 @@ public class AutoExplorer extends Module {
     private boolean finished = false;
     private boolean flying = false;
     private int takeoffTimer = 0;
+    private int heightAdjTimer = 0;
     private RouteRenderer routeRenderer;
 
     public AutoExplorer() {
@@ -128,6 +129,7 @@ public class AutoExplorer extends Module {
         finished = false;
         flying = false;
         takeoffTimer = 0;
+        heightAdjTimer = 0;
 
         info("Auto-explorer activated. Jump to take off!");
     }
@@ -183,30 +185,24 @@ public class AutoExplorer extends Module {
             }
         }
 
-        // Height control - velocity-based (no oscillation)
+        // Height control - steady pitch approach, no oscillation
         double y = mc.player.getY();
-        Vec3 vel = mc.player.getDeltaMovement();
 
         if (y < minHeight.get()) {
-            // Below min height - force upward velocity
-            mc.player.setDeltaMovement(vel.x, Math.min(vel.y + 0.2, 2.0), vel.z);
-            mc.player.setXRot(-20f);
+            // Emergency: below minimum height
+            mc.player.setXRot(-22f);
+        } else if (y > cruiseHeight.get() + 30) {
+            // Way too high: slight descent
+            mc.player.setXRot(-5f);
+        } else if (y > cruiseHeight.get() + 10) {
+            // Slightly high: level glide
+            mc.player.setXRot(-10f);
+        } else if (y < cruiseHeight.get() - 10) {
+            // Slightly low: gentle climb
+            mc.player.setXRot(-15f);
         } else {
-            double heightDiff = cruiseHeight.get() - y;
-
-            if (Math.abs(heightDiff) < 3) {
-                // At cruise height - zero vertical speed, fixed pitch
-                mc.player.setDeltaMovement(vel.x, 0, vel.z);
-                mc.player.setXRot(-10f);
-            } else if (heightDiff > 0) {
-                // Below target - go up with fixed pitch
-                mc.player.setDeltaMovement(vel.x, Math.min(vel.y + 0.05, 0.5), vel.z);
-                mc.player.setXRot(-15f);
-            } else {
-                // Above target - go down
-                mc.player.setDeltaMovement(vel.x, Math.max(vel.y - 0.05, -0.3), vel.z);
-                mc.player.setXRot(-5f);
-            }
+            // Optimal zone: neutral glide
+            mc.player.setXRot(-12f);
         }
 
         // Follow target
@@ -251,9 +247,15 @@ public class AutoExplorer extends Module {
         float targetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         mc.player.setYRot(targetYaw);
 
-        // Update route renderer
-        if (routeRenderer != null) {
-            routeRenderer.setWaypoints(path.subList(Math.min(currentPointIndex, path.size() - 1), path.size()));
+        // Update route renderer with waypoints at player's current height
+        if (routeRenderer != null && currentPointIndex < path.size()) {
+            double currentY = mc.player.getY();
+            List<Vec3> remainingPath = new ArrayList<>(path.subList(currentPointIndex, path.size()));
+            for (int i = 0; i < remainingPath.size(); i++) {
+                Vec3 p = remainingPath.get(i);
+                remainingPath.set(i, new Vec3(p.x, currentY, p.z));
+            }
+            routeRenderer.setWaypoints(remainingPath);
         }
     }
 
