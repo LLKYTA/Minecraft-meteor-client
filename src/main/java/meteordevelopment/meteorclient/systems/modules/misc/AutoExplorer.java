@@ -189,8 +189,9 @@ public class AutoExplorer extends Module {
         double y = mc.player.getY();
 
         if (y < minHeight.get()) {
-            // Emergency: below minimum height
+            // Emergency: below minimum height - force upward in movement
             mc.player.setXRot(-22f);
+            event.movement = new Vec3(event.movement.x, Math.max(event.movement.y, 0.5), event.movement.z);
         } else if (y > cruiseHeight.get() + 30) {
             // Way too high: slight descent
             mc.player.setXRot(-5f);
