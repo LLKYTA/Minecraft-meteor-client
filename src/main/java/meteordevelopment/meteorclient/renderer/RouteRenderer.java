@@ -11,13 +11,13 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RouteRenderer {
     private final List<Vec3> waypoints = new ArrayList<>();
     private boolean active = false;
     private int lineColor = 0xFFFFFFFF;
-    private float lineWidth = 2.0f;
 
     public void setWaypoints(List<Vec3> points) {
         waypoints.clear();
@@ -45,7 +45,7 @@ public class RouteRenderer {
     }
 
     public List<Vec3> getWaypoints() {
-        return waypoints;
+        return Collections.unmodifiableList(waypoints);
     }
 
     @EventHandler
