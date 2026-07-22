@@ -44,15 +44,6 @@ public class ElytraPlus extends Module {
     );
 
     // Speed
-    public final Setting<Double> targetSpeed = sgSpeed.add(new DoubleSetting.Builder()
-        .name("target-speed")
-        .description("Target horizontal speed.")
-        .defaultValue(30)
-        .min(0)
-        .sliderMax(100)
-        .build()
-    );
-
     public final Setting<Double> minHeight = sgSpeed.add(new DoubleSetting.Builder()
         .name("min-height")
         .description("Minimum flight height.")
@@ -81,30 +72,6 @@ public class ElytraPlus extends Module {
     );
 
     // Autopilot
-    public final Setting<Double> targetX = sgAutopilot.add(new DoubleSetting.Builder()
-        .name("target-x")
-        .description("Target X position to fly towards.")
-        .defaultValue(0)
-        .visible(() -> mode.get() == Mode.FollowRoute)
-        .build()
-    );
-
-    public final Setting<Double> targetZ = sgAutopilot.add(new DoubleSetting.Builder()
-        .name("target-z")
-        .description("Target Z position to fly towards.")
-        .defaultValue(0)
-        .visible(() -> mode.get() == Mode.FollowRoute)
-        .build()
-    );
-
-    public final Setting<Double> targetY = sgAutopilot.add(new DoubleSetting.Builder()
-        .name("target-y")
-        .description("Target Y position to fly towards.")
-        .defaultValue(0)
-        .visible(() -> mode.get() == Mode.FollowRoute)
-        .build()
-    );
-
     public final Setting<Boolean> autoLand = sgAutopilot.add(new BoolSetting.Builder()
         .name("auto-land")
         .description("Automatically descend when near target.")
@@ -155,6 +122,7 @@ public class ElytraPlus extends Module {
     /** Clear current target */
     public void clearTarget() {
         this.hasTarget = false;
+        this.currentTarget = Vec3.ZERO;
     }
 
     /** Check if module has an active target */
@@ -168,6 +136,7 @@ public class ElytraPlus extends Module {
 
     @EventHandler
     private void onPlayerMove(PlayerMoveEvent event) {
+        if (mc.player == null) return;
         if (!(mc.player.getItemBySlot(EquipmentSlot.CHEST).has(DataComponents.GLIDER))) return;
 
         // Auto takeoff
