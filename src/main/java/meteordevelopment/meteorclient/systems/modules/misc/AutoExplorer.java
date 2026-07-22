@@ -248,13 +248,13 @@ public class AutoExplorer extends Module {
         float targetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         mc.player.setYRot(targetYaw);
 
-        // Update route renderer with waypoints at player's current height
+        // Update route renderer with waypoints at cruise height + 15
         if (routeRenderer != null && currentPointIndex < path.size()) {
-            double currentY = mc.player.getY();
+            double trailY = cruiseHeight.get() + 15;
             List<Vec3> remainingPath = new ArrayList<>(path.subList(currentPointIndex, path.size()));
             for (int i = 0; i < remainingPath.size(); i++) {
                 Vec3 p = remainingPath.get(i);
-                remainingPath.set(i, new Vec3(p.x, currentY, p.z));
+                remainingPath.set(i, new Vec3(p.x, trailY, p.z));
             }
             routeRenderer.setWaypoints(remainingPath);
         }
@@ -280,12 +280,12 @@ public class AutoExplorer extends Module {
         path.clear();
         if (mc.player == null) return;
 
-        double flyHeight = Math.max(minHeight.get(), mc.player.getY());
+        double trailHeight = cruiseHeight.get() + 15;
         ChunkPos origin = mc.player.chunkPosition();
 
         switch (scanMode.get()) {
-            case Spiral -> generateSpiralPath(origin, flyHeight);
-            case SnakeGrid -> generateSnakeGridPath(origin, flyHeight);
+            case Spiral -> generateSpiralPath(origin, trailHeight);
+            case SnakeGrid -> generateSnakeGridPath(origin, trailHeight);
         }
 
         // Filter explored
