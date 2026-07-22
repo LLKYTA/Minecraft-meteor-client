@@ -467,6 +467,7 @@ public class Modules extends System<Modules> {
         add(new ClickTP());
         add(new ElytraBoost());
         add(new ElytraFly());
+        add(new ElytraPlus());
         add(new EntityControl());
         add(new FastClimb());
         add(new Flight());
@@ -578,5 +579,6 @@ public class Modules extends System<Modules> {
         add(new SoundBlocker());
         add(new Spam());
         add(new Swarm());
+        add(new AutoExplorer());
     }
 }

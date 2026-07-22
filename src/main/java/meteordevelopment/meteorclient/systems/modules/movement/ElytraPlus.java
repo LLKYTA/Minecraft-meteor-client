@@ -155,28 +155,41 @@ public class ElytraPlus extends Module {
             }
         }
 
-        // Height control
+        // Height control - proportional with clamping
         double y = mc.player.getY();
+        float pitchChange;
+
         if (y < minHeight.get()) {
-            // Pitch up to gain height
-            mc.player.setXRot(mc.player.getXRot() - 2.0f);
+            // Below min height - pitch up to gain height
+            pitchChange = -3.0f;
         } else if (y > maxHeight.get()) {
-            // Pitch down to lose height
-            mc.player.setXRot(mc.player.getXRot() + 2.0f);
+            // Above max height - pitch down to lose height
+            pitchChange = 3.0f;
         } else if (mode.get() == Mode.Cruise) {
-            // Cruise - maintain height
+            // Cruise - maintain height with proportional control
             double heightDiff = cruiseHeight.get() - y;
-            mc.player.setXRot(mc.player.getXRot() - (float) (heightDiff * 0.1));
+            pitchChange = (float) -(heightDiff * 0.05);
+            pitchChange = Math.max(-3.0f, Math.min(3.0f, pitchChange)); // clamp per tick
+        } else {
+            pitchChange = 0;
+        }
+
+        // Apply pitch change smoothly
+        float newPitch = mc.player.getXRot() + pitchChange;
+        newPitch = Math.max(-30f, Math.min(30f, newPitch)); // Clamp to sensible elytra range
+        mc.player.setXRot(newPitch);
+
+        // Press forward key in Cruise mode too (elytra needs forward input to fly)
+        if (mode.get() == Mode.Cruise) {
+            mc.options.keyUp.setDown(true);
         }
 
         // Speed control - pitch based
         float pitch = mc.player.getXRot();
-        if (pitch < 0) {
-            // Going up - slower
-            event.movement = event.movement.scale(0.9);
-        } else if (pitch > 10) {
-            // Going down - faster
-            event.movement = event.movement.scale(1.1);
+        if (pitch < -20) {
+            event.movement = event.movement.scale(0.8);
+        } else if (pitch > 20) {
+            event.movement = event.movement.scale(1.2);
         }
 
         // Route following
@@ -210,9 +223,11 @@ public class ElytraPlus extends Module {
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!isActive() || mc.player == null) return;
-        // Keep auto-pilot forward key pressed in FollowRoute mode
-        if (mode.get() == Mode.FollowRoute && hasTarget) {
-            mc.options.keyUp.setDown(true);
+        // Keep forward key pressed while flying
+        if (mc.player.isFallFlying()) {
+            if (mode.get() == Mode.Cruise || (mode.get() == Mode.FollowRoute && hasTarget)) {
+                mc.options.keyUp.setDown(true);
+            }
         }
     }
 
