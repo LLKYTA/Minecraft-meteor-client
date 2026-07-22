@@ -26,6 +26,7 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class MapScreen extends WidgetScreen {
     private final File mapFile;
     private Identifier textureId;
+    private DynamicTexture texture;
     private int mapWidth, mapHeight;
     private boolean loaded = false;
 
@@ -49,11 +50,15 @@ public class MapScreen extends WidgetScreen {
             mapWidth = image.getWidth();
             mapHeight = image.getHeight();
 
-            // Create a unique identifier for this texture
-            textureId = MeteorClient.identifier("maps/" + mapFile.getName());
+            // Create identifier without extension and normalized (lowercase, spaces -> underscores)
+            String name = mapFile.getName();
+            int dotIndex = name.lastIndexOf('.');
+            if (dotIndex > 0) name = name.substring(0, dotIndex);
+            String normalizedName = name.toLowerCase().replace(' ', '_');
+            textureId = MeteorClient.identifier("maps/" + normalizedName);
 
             // Create and register the dynamic texture
-            DynamicTexture texture = new DynamicTexture(() -> mapFile.getName(), image);
+            texture = new DynamicTexture(() -> normalizedName, image);
             mc.getTextureManager().register(textureId, texture);
 
             loaded = true;
@@ -69,7 +74,11 @@ public class MapScreen extends WidgetScreen {
 
     @Override
     protected void onClosed() {
-        // Texture cleanup is handled by TextureManager on resource reload
+        if (texture != null) {
+            mc.getTextureManager().release(textureId);
+            texture = null;
+            textureId = null;
+        }
     }
 
     @Override
