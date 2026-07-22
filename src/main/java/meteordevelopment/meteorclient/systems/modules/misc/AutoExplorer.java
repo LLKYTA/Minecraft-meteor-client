@@ -13,16 +13,18 @@ import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.ElytraPlus;
+import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class AutoExplorer extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-    private final SettingGroup sgScan = settings.createGroup("Scan");
 
     // General
     public final Setting<ScanMode> scanMode = sgGeneral.add(new EnumSetting.Builder<ScanMode>()
@@ -223,9 +225,10 @@ public class AutoExplorer extends Module {
     private void generateSnakeGridPath(ChunkPos origin) {
         int r = radius.get();
         int step = chunkStep.get();
+        int row = 0;
 
         for (int z = -r/2; z <= r/2; z += step) {
-            if (z % (step * 2) == 0) {
+            if (row % 2 == 0) {
                 // Left to right
                 for (int x = -r/2; x <= r/2; x += step) {
                     double worldX = (origin.x() + x) * 16 + 8;
@@ -240,12 +243,13 @@ public class AutoExplorer extends Module {
                     path.add(new Vec3(worldX, 0, worldZ));
                 }
             }
+            row++;
         }
     }
 
     private File getDataFile() {
         String worldName = mc.level != null
-            ? mc.level.dimension().identifier().toString().replace(':', '_')
+            ? Utils.getFileWorldName() + "_" + mc.level.dimension().identifier().toString().replace(':', '_')
             : "unknown";
         File dir = new File(MeteorClient.FOLDER, "explorer");
         dir.mkdirs();
@@ -272,13 +276,17 @@ public class AutoExplorer extends Module {
 
     private void saveExploredChunks() {
         File file = getDataFile();
-        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+        File tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(tmpFile))) {
             out.writeInt(exploredChunks.size());
             for (ChunkPos cp : exploredChunks) {
                 out.writeInt(cp.x());
                 out.writeInt(cp.z());
             }
+            out.flush();
+            Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
+            tmpFile.delete();
             error("Failed to save explored chunks.");
         }
     }
