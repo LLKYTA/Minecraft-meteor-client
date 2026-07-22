@@ -21,12 +21,16 @@ repositories {
         url = uri("https://maven.meteordev.org/snapshots")
     }
     maven {
-        name = "Terraformers"
-        url = uri("https://maven.terraformersmc.com")
-    }
-    maven {
         name = "ViaVersion"
         url = uri("https://repo.viaversion.com")
+    }
+    maven {
+        name = "Local Maven"
+        url = rootDir.resolve("local-maven").toURI()
+    }
+    maven {
+        name = "Aliyun Maven"
+        url = uri("https://maven.aliyun.com/repository/public")
     }
     mavenCentral()
 
