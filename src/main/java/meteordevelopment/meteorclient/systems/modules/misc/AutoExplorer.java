@@ -8,6 +8,7 @@ package meteordevelopment.meteorclient.systems.modules.misc;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.entity.player.PlayerMoveEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.mixininterface.IVec3;
 import meteordevelopment.meteorclient.renderer.RouteRenderer;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
@@ -99,7 +100,6 @@ public class AutoExplorer extends Module {
     private boolean finished = false;
     private boolean flying = false;
     private int takeoffTimer = 0;
-    private int heightAdjTimer = 0;
     private RouteRenderer routeRenderer;
 
     public AutoExplorer() {
@@ -129,7 +129,6 @@ public class AutoExplorer extends Module {
         finished = false;
         flying = false;
         takeoffTimer = 0;
-        heightAdjTimer = 0;
 
         info("Auto-explorer activated. Jump to take off!");
     }
@@ -185,26 +184,42 @@ public class AutoExplorer extends Module {
             }
         }
 
-        // Height control - steady pitch approach, no oscillation
+        // Compute own velocity to fully control flight (like ElytraFly does)
         double y = mc.player.getY();
+        double velX, velY, velZ;
 
         if (y < minHeight.get()) {
-            // Emergency: below minimum height - force upward in movement
+            // Below minimum: full control override - climb at fixed speed
             mc.player.setXRot(-22f);
-            event.movement = new Vec3(event.movement.x, Math.max(event.movement.y, 0.5), event.movement.z);
+            Vec3 lookDir = Vec3.directionFromRotation(0, mc.player.getYRot());
+            velX = lookDir.x * 1.5;
+            velZ = lookDir.z * 1.5;
+            velY = 0.8;
         } else if (y > cruiseHeight.get() + 30) {
-            // Way too high: slight descent
             mc.player.setXRot(-5f);
+            Vec3 lookDir = Vec3.directionFromRotation(0, mc.player.getYRot());
+            velX = lookDir.x * 2.0;
+            velZ = lookDir.z * 2.0;
+            velY = event.movement.y;
         } else if (y > cruiseHeight.get() + 10) {
-            // Slightly high: level glide
             mc.player.setXRot(-10f);
+            velX = event.movement.x;
+            velZ = event.movement.z;
+            velY = event.movement.y;
         } else if (y < cruiseHeight.get() - 10) {
-            // Slightly low: gentle climb
             mc.player.setXRot(-15f);
+            velX = event.movement.x;
+            velZ = event.movement.z;
+            velY = event.movement.y;
         } else {
-            // Optimal zone: neutral glide
             mc.player.setXRot(-12f);
+            velX = event.movement.x;
+            velZ = event.movement.z;
+            velY = event.movement.y;
         }
+
+        // Apply full velocity override via IVec3 (in-place modification)
+        ((IVec3) event.movement).meteor$set(velX, velY, velZ);
 
         // Follow target
         if (currentPointIndex < path.size()) {
